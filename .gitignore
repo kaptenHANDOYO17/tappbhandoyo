@@ -1,0 +1,18 @@
+# Dependency
+node_modules/
+
+# Hasil build
+dist/
+dev-dist/
+
+# Environment (jangan di-push; isi lewat Environment Variables di Vercel)
+.env
+.env.local
+
+# Vercel
+.vercel
+
+# Sistem
+.DS_Store
+Thumbs.db
+npm-debug.log*

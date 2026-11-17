@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FCD9A8"/><stop offset="100%" stop-color="#F9A8D4"/></linearGradient>
+<linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#40916C"/><stop offset="100%" stop-color="#2D6A4F"/></linearGradient>
+</defs>
+<rect width="800" height="600" fill="url(#sky)"/>
+<circle cx="612" cy="132" r="56" fill="#FFF7D6" opacity="0.9"/>
+<g fill="#ffffff" opacity="0.18"><ellipse cx="170" cy="118" rx="86" ry="26"/><ellipse cx="236" cy="130" rx="64" ry="20"/><ellipse cx="470" cy="92" rx="58" ry="18"/></g>
+<path d="M-20 420 L140 250 L270 420 Z" fill="#6B5B7B" opacity="0.75"/>
+<path d="M520 420 L660 262 L820 420 Z" fill="#6B5B7B" opacity="0.6"/>
+<path d="M-20 470 L250 196 L420 410 L520 318 L820 470 Z" fill="url(#fg)"/>
+<path d="M-20 600 L-20 486 L180 420 L400 500 L620 428 L820 494 L820 600 Z" fill="#2D6A4F"/>
+<g stroke="#ffffff" stroke-opacity="0.22" stroke-width="3" fill="none"><path d="M-20 520 Q200 486 420 522 T820 512"/><path d="M-20 556 Q220 524 440 558 T820 548"/></g>
+<path d="M60 600 Q210 520 268 452 T250 210" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="7" stroke-linecap="round" stroke-dasharray="18 14"/>
+<text x="34" y="556" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="700" fill="#ffffff" fill-opacity="0.9">Bismo</text>
+</svg>

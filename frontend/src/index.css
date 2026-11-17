@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    @apply h-full;
+  }
+
+  body {
+    @apply bg-forest-600 font-sans text-forest-800 antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #root {
+    @apply min-h-full;
+  }
+}
+
+@layer components {
+  /* Container utama: mobile-first, maksimal 480px dan berada
+     di tengah layar saat dibuka di desktop. */
+  .app-shell {
+    @apply relative mx-auto flex min-h-screen w-full max-w-[480px] flex-col
+           bg-sand shadow-2xl;
+  }
+
+  .page-pad {
+    @apply px-4 pb-28 pt-4;
+  }
+
+  .card {
+    @apply overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-black/5
+           transition-transform active:scale-[0.985];
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px]
+           font-semibold leading-none;
+  }
+
+  .nav-item {
+    @apply flex flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px]
+           font-medium transition-colors;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-2xl bg-forest-100/70;
+  }
+}
+
+/* Sembunyikan scrollbar horizontal pada baris filter kategori */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
