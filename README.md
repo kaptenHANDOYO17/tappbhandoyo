@@ -152,19 +152,6 @@ Di Chrome Android pilih menu **⋮ → Add to Home screen**.
 
 ## 6. Deploy ke Vercel
 
-**Push ke GitHub cukup SEKALI.** Satu repository berisi folder `backend/` dan
-`frontend/` sekaligus (struktur monorepo seperti paket ini).
-
-Yang dilakukan dua kali adalah **membuat Project di Vercel**, bukan push-nya.
-Alasannya: satu Project Vercel hanya menghasilkan **satu jenis output**.
-Backend berjalan sebagai *serverless function* Node.js, sedangkan frontend
-adalah *static site* hasil `vite build`. Build command dan output directory-nya
-berbeda, jadi keduanya tidak bisa ditampung satu Project.
-
-Vercel memang mendukung pola ini: satu repository boleh dipakai oleh beberapa
-Project, masing-masing dibedakan lewat pengaturan **Root Directory**.
-Setelah itu, setiap `git push` akan **otomatis men-deploy ulang keduanya** —
-Anda tidak perlu push dua kali selamanya.
 
 ### Langkah 0 — Push sekali saja
 
@@ -217,10 +204,7 @@ Project, satu kali push.
 
 ---
 
-## 7. Database Supabase (SUDAH DIBUATKAN DAN TERISI)
-
-Project Supabase sudah dibuat, tabelnya sudah jadi, dan datanya sudah terisi.
-Tidak perlu setup dari nol.
+## 7. Database Supabase
 
 | | |
 |---|---|
