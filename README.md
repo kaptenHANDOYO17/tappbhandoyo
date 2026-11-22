@@ -429,16 +429,10 @@ Saat Supabase normal, respons tetap langsung dari Supabase tanpa penundaan.
 
 ---
 
-## 12. Langkah yang Tersisa (perlu Anda lakukan sendiri)
-
-Dua hal di bawah ini tidak bisa saya selesaikan karena batas izin, bukan karena
-kendala teknis. Keduanya cepat.
+## 12. Langkah yang Tersisa
 
 ### a. Membuat repository GitHub, lalu push
 
-Repository `mounttrack-ta` belum ada dan saya tidak punya izin membuatnya.
-Buat repository kosong dulu di <https://github.com/new> dengan nama
-**`mounttrack-ta`** (jangan centang "Add a README"), lalu:
 
 ```bash
 cd mounttrack-ta
@@ -454,20 +448,6 @@ git push -u origin main
 
 ### b. Deploy ke Vercel
 
-Koneksi Vercel saya hanya berizin baca, sehingga tidak bisa membuat project
-maupun deployment. Setelah repo ter-push, ikuti **bagian 6** README ini.
-Jangan lupa isi Environment Variables berikut pada **project backend**:
-
-| Name | Value |
-|------|-------|
-| `SUPABASE_URL` | `https://kquucgissbdkwdwgarjk.supabase.co` |
-| `SUPABASE_ANON_KEY` | lihat `backend/.env` |
-
-dan pada **project frontend**:
-
-| Name | Value |
-|------|-------|
-| `VITE_API_BASE_URL` | URL project backend hasil deploy |
 
 ---
 
