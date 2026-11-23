@@ -12,6 +12,7 @@ const cors = require('cors');
 
 const gunungRoutes = require('./routes/gunungRoutes');
 const alatRoutes = require('./routes/alatRoutes');
+const saranRoutes = require('./routes/saranRoutes');
 const { dataSourceMode } = require('./lib/supabase');
 
 const app = express();
@@ -32,7 +33,7 @@ app.use(
       if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(null, true); // tetap diizinkan agar demo PWA tidak terblokir
     },
-    methods: ['GET', 'OPTIONS'],
+    methods: ['GET', 'POST', 'OPTIONS'],
     credentials: false,
   })
 );
@@ -66,6 +67,7 @@ app.get('/', (req, res) => {
       'GET /api/alat',
       'GET /api/alat/:id',
       'GET /api/health',
+      'POST /api/saran-gear',
     ],
   });
 });
@@ -82,6 +84,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/gunung', gunungRoutes);
 app.use('/api/alat', alatRoutes);
+app.use('/api/saran-gear', saranRoutes);
 
 /* -------------------- ERROR HANDLING -------------------- */
 

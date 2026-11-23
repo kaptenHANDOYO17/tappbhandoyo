@@ -103,12 +103,48 @@ async function request(path) {
 
 /* -------------------------- ENDPOINTS ------------------------ */
 
+
+/**
+ * Meminta saran persiapan ke backend (yang meneruskan ke Gemini).
+ * Dibuat POST karena mengirim daftar alat yang dimiliki.
+ * Kunci Gemini TIDAK ada di sini; semuanya ditangani server.
+ */
+async function postSaranGear(gunungId, alatDimiliki) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch(`${BASE_URL}/api/saran-gear`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ gunung_id: gunungId, alat_dimiliki: alatDimiliki }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.message || `Server merespons status ${res.status}.`);
+    }
+    return { data: json.data, sumber: json.sumber };
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Permintaan saran terlalu lama. Coba lagi sebentar.');
+    }
+    throw new Error(
+      error.message?.includes('fetch')
+        ? `Tidak dapat terhubung ke server API (${BASE_URL}).`
+        : error.message
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const api = {
   baseUrl: BASE_URL,
   getGunungList: () => request('/api/gunung'),
   getGunungDetail: (id) => request(`/api/gunung/${id}`),
   getAlatList: () => request('/api/alat'),
   getAlatDetail: (id) => request(`/api/alat/${id}`),
+  postSaranGear,
 };
 
 export default api;

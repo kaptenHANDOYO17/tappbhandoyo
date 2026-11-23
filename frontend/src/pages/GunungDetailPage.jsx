@@ -21,6 +21,7 @@ import {
 import api from '../api/client.js';
 import SafeImage from '../components/SafeImage.jsx';
 import BackButton from '../components/BackButton.jsx';
+import WishlistButton from '../components/WishlistButton.jsx';
 import { DifficultyBadge } from '../components/DifficultyBadge.jsx';
 import { ErrorState, LoadingState, OfflineBanner } from '../components/StateViews.jsx';
 
@@ -109,8 +110,9 @@ export default function GunungDetailPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-forest-800/85 via-forest-800/20 to-transparent" />
 
-        <div className="absolute left-4 top-4">
+        <div className="absolute left-4 right-4 top-4 flex items-start justify-between">
           <BackButton fallback="/gunung" label="Kembali" />
+          <WishlistButton gunungId={gunung.id} />
         </div>
 
         <div className="absolute bottom-4 left-4 right-4 text-white">

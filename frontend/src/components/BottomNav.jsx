@@ -1,15 +1,17 @@
 /**
- *  BOTTOM NAVIGATION BAR (tetap di bawah, 3 menu utama)
+ *  BOTTOM NAVIGATION BAR (5 menu utama)
  *  Handoyo | 21120124120040 | Teknik Komputer
  */
 
 import { NavLink } from 'react-router-dom';
-import { Mountain, Backpack, UserRound } from 'lucide-react';
+import { Mountain, Backpack, Heart, ClipboardCheck, UserRound } from 'lucide-react';
 
 const menus = [
-  { to: '/gunung', label: 'Gunung', icon: Mountain },
-  { to: '/alat', label: 'Alat', icon: Backpack },
-  { to: '/profil', label: 'Profil', icon: UserRound },
+  { to: '/gunung',   label: 'Gunung',   icon: Mountain },
+  { to: '/alat',     label: 'Alat',     icon: Backpack },
+  { to: '/wishlist', label: 'Wishlist', icon: Heart },
+  { to: '/my-gear',  label: 'My Gear',  icon: ClipboardCheck },
+  { to: '/profil',   label: 'Profil',   icon: UserRound },
 ];
 
 export default function BottomNav() {
@@ -25,23 +27,19 @@ export default function BottomNav() {
             key={to}
             to={to}
             className={({ isActive }) =>
-              `nav-item ${
-                isActive
-                  ? 'text-forest-600'
-                  : 'text-forest-800/45 hover:text-forest-500'
-              }`
+              `nav-item ${isActive ? 'text-forest-600' : 'text-forest-800/45 hover:text-forest-500'}`
             }
           >
             {({ isActive }) => (
               <>
                 <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${
                     isActive ? 'bg-forest-100' : 'bg-transparent'
                   }`}
                 >
-                  <Icon size={20} strokeWidth={isActive ? 2.4 : 2} />
+                  <Icon size={18} strokeWidth={isActive ? 2.4 : 2} />
                 </span>
-                <span>{label}</span>
+                <span className="text-[10px] leading-none">{label}</span>
               </>
             )}
           </NavLink>
