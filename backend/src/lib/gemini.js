@@ -4,33 +4,40 @@
  * ------------------------------------------------------------
  *  PENTING soal keamanan:
  *  Kunci API dibaca dari process.env.GEMINI_API_KEY dan TIDAK
- *  PERNAH dikirim ke browser. Frontend hanya memanggil
- *  endpoint milik kita sendiri (/api/saran-gear), lalu server
- *  inilah yang menghubungi Google. Kalau kunci ditaruh di
- *  frontend (VITE_...), isinya ikut terbundel ke JavaScript
- *  dan bisa dibaca siapa pun lewat DevTools.
+ *  PERNAH dikirim ke browser. Frontend hanya memanggil endpoint
+ *  milik kita sendiri (/api/saran-gear); server inilah yang
+ *  menghubungi Google.
+ *
+ *  Soal nama model:
+ *  Google rutin memensiunkan model lama. Pernah terjadi: model
+ *  gemini-2.0-flash dijawab 404 "no longer available". Karena
+ *  itu GEMINI_MODEL boleh diisi beberapa nama sekaligus,
+ *  dipisah koma, dan akan dicoba berurutan sampai ada yang
+ *  berhasil. Jadi saat satu model pensiun, aplikasi tidak mati.
  *
  *  Handoyo | 21120124120040 | Teknik Komputer
  * ============================================================
  */
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const DAFTAR_MODEL_BAWAAN = 'gemini-3.8-flash,gemini-flash-latest';
 const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 8000);
 
-function kunci() {
-  return (process.env.GEMINI_API_KEY || '').trim();
-}
-
+const kunci = () => (process.env.GEMINI_API_KEY || '').trim();
 const geminiAktif = () => kunci().length > 0;
 
-/**
- * Memanggil Gemini satu kali dengan header tertentu.
- * Dipisah supaya bisa dicoba dua gaya autentikasi:
- * - x-goog-api-key  : untuk API key biasa (AIza...)
- * - Authorization   : untuk token bergaya OAuth (AQ...)
- */
-async function panggil(prompt, headerAuth) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+/** Daftar model yang akan dicoba berurutan. */
+function daftarModel() {
+  return (process.env.GEMINI_MODEL || DAFTAR_MODEL_BAWAAN)
+    .split(',')
+    .map((m) => m.trim())
+    .filter(Boolean);
+}
+
+const MODEL = daftarModel()[0];
+
+/** Satu kali panggilan ke Google. */
+async function panggil(model, prompt, headerAuth) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -47,9 +54,9 @@ async function panggil(prompt, headerAuth) {
 
     const teks = await res.text();
     if (!res.ok) {
-      const err = new Error(`Gemini menolak (HTTP ${res.status})`);
+      const err = new Error(`Gemini menolak model ${model} (HTTP ${res.status})`);
       err.status = res.status;
-      err.detail = teks.slice(0, 300);
+      err.detail = teks.slice(0, 200);
       throw err;
     }
 
@@ -63,23 +70,36 @@ async function panggil(prompt, headerAuth) {
 }
 
 /**
- * Meminta saran ke Gemini. Mencoba dua gaya autentikasi
- * karena format kunci Google berbeda-beda.
- * @returns {Promise<string>} teks saran
+ * Meminta saran ke Gemini.
+ * Mencoba tiap model berurutan; kalau satu model pensiun (404)
+ * atau sedang kelebihan beban (503), lanjut ke model berikutnya.
+ * Gaya autentikasi juga dicoba dua macam karena format kunci
+ * Google berbeda-beda.
  */
 async function mintaSaran(prompt) {
-  const k = kunci();
-  if (!k) throw new Error('GEMINI_API_KEY belum diisi');
+  if (!kunci()) throw new Error('GEMINI_API_KEY belum diisi');
 
-  try {
-    return await panggil(prompt, { 'x-goog-api-key': k });
-  } catch (error) {
-    // 401/403 berarti gaya autentikasinya salah, bukan promptnya.
-    if (error.status === 401 || error.status === 403) {
-      return await panggil(prompt, { Authorization: `Bearer ${k}` });
+  const model = daftarModel();
+  let terakhir = null;
+
+  for (const m of model) {
+    try {
+      return await panggil(m, prompt, { 'x-goog-api-key': kunci() });
+    } catch (error) {
+      terakhir = error;
+      // Salah gaya autentikasi, bukan salah model: coba Bearer.
+      if (error.status === 401 || error.status === 403) {
+        try {
+          return await panggil(m, prompt, { Authorization: `Bearer ${kunci()}` });
+        } catch (e2) {
+          terakhir = e2;
+        }
+      }
+      console.warn(`[MountTrack] Model ${m} gagal: ${error.message}. Mencoba model berikutnya.`);
     }
-    throw error;
   }
+
+  throw terakhir || new Error('Semua model Gemini gagal dihubungi');
 }
 
-module.exports = { mintaSaran, geminiAktif, MODEL };
+module.exports = { mintaSaran, geminiAktif, MODEL, daftarModel };
