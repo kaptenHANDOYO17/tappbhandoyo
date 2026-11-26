@@ -23,7 +23,7 @@ const alatData = [
     berat_ideal: '2.1 kg',
     prioritas: 'Wajib',
     gambar_url:
-      '/images/alat-tas-carrier.svg',
+      '/images/alat-tas-carrier.jpg',
     fungsi:
       'Tas carrier berkapasitas 60 liter berfungsi sebagai wadah utama seluruh logistik pendakian, mulai dari tenda, sleeping bag, pakaian ganti, air, hingga bahan makanan. Rangka internal dan sistem hip belt memindahkan sebagian besar beban dari punggung ke pinggul sehingga tubuh tetap seimbang saat melewati trek menanjak maupun turunan panjang.',
     risiko_tanpa_alat:
@@ -36,7 +36,7 @@ const alatData = [
     berat_ideal: '0.9 kg',
     prioritas: 'Wajib',
     gambar_url:
-      '/images/alat-sleeping-bag.svg',
+      '/images/alat-sleeping-bag.jpg',
     fungsi:
       'Sleeping bag berbahan polar menjaga suhu tubuh tetap stabil saat beristirahat di dalam tenda. Bahan ini memerangkap udara hangat hasil panas tubuh dan tetap terasa nyaman meskipun suhu lingkungan turun drastis pada dini hari di ketinggian di atas 2.000 meter.',
     risiko_tanpa_alat:
@@ -49,7 +49,7 @@ const alatData = [
     berat_ideal: '1.2 kg',
     prioritas: 'Wajib',
     gambar_url:
-      '/images/alat-sepatu-tracking.svg',
+      '/images/alat-sepatu-tracking.jpg',
     fungsi:
       'Sepatu tracking waterproof memberi cengkeraman kuat pada tanah basah, akar, dan batuan lepas melalui pola outsole yang agresif. Lapisan membran tahan air menjaga kaki tetap kering saat menembus kabut, embun pagi, atau hujan ringan, sementara bagian ankle melindungi pergelangan kaki dari gerakan memutar berlebih.',
     risiko_tanpa_alat:
@@ -62,7 +62,7 @@ const alatData = [
     berat_ideal: '0.15 kg',
     prioritas: 'Wajib',
     gambar_url:
-      '/images/alat-headlamp.svg',
+      '/images/alat-headlamp.jpg',
     fungsi:
       'Headlamp LED menjadi sumber cahaya utama untuk summit attack dini hari, memasak, maupun membongkar tenda saat gelap. Karena dipasang di kepala, kedua tangan tetap bebas untuk berpegangan pada akar maupun tali webbing di jalur terjal.',
     risiko_tanpa_alat:
@@ -75,7 +75,7 @@ const alatData = [
     berat_ideal: '0.6 kg',
     prioritas: 'Wajib',
     gambar_url:
-      '/images/alat-jaket-windproof.svg',
+      '/images/alat-jaket-windproof.jpg',
     fungsi:
       'Jaket windproof menahan terpaan angin kencang di punggungan terbuka dan area sabana sehingga panas tubuh tidak cepat hilang. Material ripstop yang ringan dan cepat kering membuatnya ideal dipakai sebagai lapisan terluar dalam sistem berlapis bersama baselayer dan fleece.',
     risiko_tanpa_alat:
@@ -88,7 +88,7 @@ const alatData = [
     berat_ideal: '0.35 kg',
     prioritas: 'Penting',
     gambar_url:
-      '/images/alat-matras.svg',
+      '/images/alat-matras.jpg',
     fungsi:
       'Matras aluminium foil dipasang sebagai lapisan dasar di dalam tenda untuk memutus konduksi dingin dari permukaan tanah ke tubuh. Lapisan reflektifnya memantulkan kembali panas tubuh, sementara sisi busanya memberi bantalan terhadap kerikil dan permukaan tidak rata.',
     risiko_tanpa_alat:
@@ -101,7 +101,7 @@ const alatData = [
     berat_ideal: '0.5 kg',
     prioritas: 'Opsional',
     gambar_url:
-      '/images/alat-trekking-pole.svg',
+      '/images/alat-trekking-pole.jpg',
     fungsi:
       'Trekking pole membantu mendistribusikan beban tubuh ke lengan sehingga tekanan pada lutut berkurang signifikan, terutama pada jalur turunan panjang. Tongkat ini juga berguna untuk menguji kestabilan pijakan, menyeberangi aliran air, dan menjaga ritme langkah tetap konsisten.',
     risiko_tanpa_alat:
@@ -114,7 +114,7 @@ const alatData = [
     berat_ideal: '0.8 kg',
     prioritas: 'Wajib',
     gambar_url:
-      '/images/alat-kompor-portable.svg',
+      '/images/alat-kompor-portable.jpg',
     fungsi:
       'Kompor portable berbahan bakar gas kaleng digunakan untuk memasak makanan hangat dan merebus air minum di area camp. Asupan makanan hangat berperan penting menjaga suhu inti tubuh serta memulihkan kalori yang terkuras selama perjalanan.',
     risiko_tanpa_alat:
