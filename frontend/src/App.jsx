@@ -15,6 +15,7 @@ import AlatDetailPage from './pages/AlatDetailPage.jsx';
 import WishlistPage from './pages/WishlistPage.jsx';
 import MyGearPage from './pages/MyGearPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import GalleryPage from './pages/GalleryPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
@@ -53,6 +54,18 @@ export default function App() {
                 pesan="Centang perlengkapanmu sekali, lalu bisa dibuka lagi kapan saja dari perangkat mana pun."
               >
                 <MyGearPage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/galeri"
+            element={
+              <RequireAuth
+                judul="My Gallery perlu akun"
+                pesan="Dengan akun, foto dan cerita pendakianmu tersimpan di server dan tidak hilang walau ganti HP."
+              >
+                <GalleryPage />
               </RequireAuth>
             }
           />

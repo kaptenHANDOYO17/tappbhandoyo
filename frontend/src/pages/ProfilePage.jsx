@@ -13,7 +13,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BadgeCheck, Backpack, Camera, Database, GraduationCap, IdCard, LogIn, LogOut,
+  BadgeCheck, Backpack, Camera, Database, GraduationCap, IdCard, Images, LogIn, LogOut,
+  ChevronRight,
   Mountain, Pencil, Save, Server, Smartphone, UserRound, Wifi, WifiOff, X,
 } from 'lucide-react';
 import api from '../api/client.js';
@@ -199,7 +200,26 @@ export default function ProfilePage() {
                         ))}
                     </dl>
 
-                    <div className="mt-4 flex gap-2">
+                    {/* Pintu masuk ke galeri momen pendakian */}
+                    <Link
+                      to="/galeri"
+                      className="mt-4 flex items-center gap-3 rounded-xl bg-forest-100/70 p-3
+                                 ring-1 ring-forest-200 active:scale-[0.98]"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
+                                       bg-forest-600 text-white">
+                        <Images size={18} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-bold text-forest-800">My Gallery</span>
+                        <span className="block text-[11px] leading-snug text-forest-800/60">
+                          Simpan foto dan cerita tiap pendakianmu di satu tempat
+                        </span>
+                      </span>
+                      <ChevronRight size={16} className="shrink-0 text-forest-800/35" />
+                    </Link>
+
+                    <div className="mt-3 flex gap-2">
                       <button type="button" onClick={() => setMode('ubah')}
                               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-forest-600 py-2.5
                                          text-xs font-semibold text-white active:scale-95">

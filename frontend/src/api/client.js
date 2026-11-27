@@ -109,21 +109,29 @@ async function request(path) {
  * Dibuat POST karena mengirim daftar alat yang dimiliki.
  * Kunci Gemini TIDAK ada di sini; semuanya ditangani server.
  */
-async function postSaranGear(gunungId, alatDimiliki) {
+async function postSaranGear(gunungId, alatDimiliki, rencana = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20000);
+  const timer = setTimeout(() => controller.abort(), 25000);
   try {
     const res = await fetch(`${BASE_URL}/api/saran-gear`, {
       method: 'POST',
       signal: controller.signal,
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ gunung_id: gunungId, alat_dimiliki: alatDimiliki }),
+      body: JSON.stringify({
+        gunung_id: gunungId,
+        alat_dimiliki: alatDimiliki,
+        gaya: rencana.gaya || 'tektok',
+        lama_malam: rencana.lamaMalam ?? 0,
+        jumlah_orang: rencana.jumlahOrang ?? 1,
+      }),
     });
     const json = await res.json();
     if (!res.ok || !json.success) {
       throw new Error(json.message || `Server merespons status ${res.status}.`);
     }
-    return { data: json.data, sumber: json.sumber };
+    // 'alasan' hanya terisi bila Gemini gagal; dipakai untuk menjelaskan
+    // ke pengguna kenapa saran datang dari aturan, bukan dari AI.
+    return { data: json.data, sumber: json.sumber, alasan: json.alasan || '' };
   } catch (error) {
     if (error.name === 'AbortError') {
       throw new Error('Permintaan saran terlalu lama. Coba lagi sebentar.');

@@ -139,3 +139,115 @@ create policy "avatar unggah sendiri" on storage.objects for insert to authentic
   with check (bucket_id = 'avatar' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "avatar ubah sendiri" on storage.objects for update to authenticated
   using (bucket_id = 'avatar' and (storage.foldername(name))[1] = auth.uid()::text);
+
+
+-- ============================================================
+--  BAGIAN 3: RENCANA PENDAKIAN, SOFT DELETE, DAN GALERI
+--  Dijalankan setelah Bagian 2.
+-- ============================================================
+
+-- Membedakan perlengkapan yang hanya perlu saat bermalam.
+--   'semua' -> dibutuhkan pada tektok maupun camp
+--   'camp'  -> hanya saat menginap di gunung
+alter table public.alat
+  add column if not exists konteks text not null default 'semua';
+
+do $$ begin
+  alter table public.alat add constraint alat_konteks_valid
+    check (konteks in ('semua','camp'));
+exception when duplicate_object then null; end $$;
+
+-- Soft delete wishlist: baris tidak dibuang, hanya ditandai.
+alter table public.wishlist
+  add column if not exists dihapus_pada timestamptz;
+
+create index if not exists wishlist_aktif_idx
+  on public.wishlist (user_id) where dihapus_pada is null;
+
+-- Rencana pendakian: satu baris per pengguna.
+create table if not exists public.rencana_pendakian (
+  id           bigserial primary key,
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  gunung_id    integer references public.gunung(id) on delete set null,
+  gaya         text not null default 'tektok' check (gaya in ('tektok','camp')),
+  lama_malam   integer not null default 0 check (lama_malam between 0 and 6),
+  jumlah_orang integer not null default 1 check (jumlah_orang between 1 and 20),
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (user_id)
+);
+
+alter table public.rencana_pendakian enable row level security;
+
+do $$ begin
+  create policy "rencana milik sendiri" on public.rencana_pendakian
+    for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+-- Galeri: satu postingan berisi banyak foto (carousel).
+create table if not exists public.galeri_post (
+  id                bigserial primary key,
+  user_id           uuid not null references auth.users(id) on delete cascade,
+  judul             text not null,
+  cerita            text,
+  gunung_id         integer references public.gunung(id) on delete set null,
+  tanggal_pendakian date,
+  created_at        timestamptz not null default now(),
+  dihapus_pada      timestamptz
+);
+
+create table if not exists public.galeri_foto (
+  id         bigserial primary key,
+  post_id    bigint not null references public.galeri_post(id) on delete cascade,
+  url        text not null,
+  urutan     integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists galeri_post_user_idx
+  on public.galeri_post (user_id, created_at desc) where dihapus_pada is null;
+create index if not exists galeri_foto_post_idx
+  on public.galeri_foto (post_id, urutan);
+
+alter table public.galeri_post enable row level security;
+alter table public.galeri_foto enable row level security;
+
+do $$ begin
+  create policy "post milik sendiri" on public.galeri_post
+    for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "foto ikut pemilik post" on public.galeri_foto
+    for all using (
+      exists (select 1 from public.galeri_post p
+              where p.id = galeri_foto.post_id and p.user_id = auth.uid())
+    ) with check (
+      exists (select 1 from public.galeri_post p
+              where p.id = galeri_foto.post_id and p.user_id = auth.uid())
+    );
+exception when duplicate_object then null; end $$;
+
+-- Bucket foto galeri: dibaca publik, ditulis hanya oleh pemiliknya.
+insert into storage.buckets (id, name, public)
+values ('galeri','galeri', true)
+on conflict (id) do nothing;
+
+do $$ begin
+  create policy "galeri baca publik" on storage.objects
+    for select using (bucket_id = 'galeri');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "galeri unggah milik sendiri" on storage.objects
+    for insert with check (
+      bucket_id = 'galeri' and auth.uid()::text = (storage.foldername(name))[1]
+    );
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "galeri hapus milik sendiri" on storage.objects
+    for delete using (
+      bucket_id = 'galeri' and auth.uid()::text = (storage.foldername(name))[1]
+    );
+exception when duplicate_object then null; end $$;

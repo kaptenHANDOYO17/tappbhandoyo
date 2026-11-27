@@ -1,10 +1,16 @@
 /**
  * ============================================================
  *  HALAMAN MY GEAR
- *  Pengguna mencentang perlengkapan yang sudah dimiliki, lalu
- *  memilih gunung tujuan. Aplikasi menghitung persentase
- *  kesiapan (dari alat berstatus WAJIB) dan meminta saran
- *  persiapan ke backend, yang meneruskannya ke Gemini.
+ * ------------------------------------------------------------
+ *  Pengguna menyusun RENCANA PENDAKIAN lebih dulu:
+ *    - gunung tujuan
+ *    - gaya  : tektok (pulang hari) atau camp (bermalam)
+ *    - berapa malam, dan berapa orang
+ *
+ *  Rencana itu menentukan perlengkapan mana yang dihitung.
+ *  Pendaki tektok tidak perlu tenda, sleeping bag, matras,
+ *  kompor, dan nesting, sehingga tidak adil bila ketiadaan
+ *  barang-barang itu menurunkan persentase kesiapannya.
  *
  *  Handoyo | 21120124120040 | Teknik Komputer
  * ============================================================
@@ -13,13 +19,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Backpack, Check, Mountain, Sparkles, TriangleAlert, RefreshCw, Weight,
+  Sun, Tent, Users, Moon, Info, Droplets,
 } from 'lucide-react';
 import api from '../api/client.js';
 import PageHeader from '../components/PageHeader.jsx';
+import SafeImage from '../components/SafeImage.jsx';
 import { PriorityBadge } from '../components/DifficultyBadge.jsx';
 import { ErrorState, LoadingState } from '../components/StateViews.jsx';
 import { supabase, supabaseSiap } from '../lib/supabase.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useRencana } from '../context/useRencana.js';
 
 /** Cincin persentase sederhana memakai SVG. */
 function CincinPersen({ persen }) {
@@ -42,16 +51,17 @@ function CincinPersen({ persen }) {
 
 export default function MyGearPage() {
   const { user } = useAuth();
+  const { rencana, totalHari, ubah: ubahRencana } = useRencana();
 
   const [semuaAlat, setSemuaAlat] = useState([]);
   const [semuaGunung, setSemuaGunung] = useState([]);
-  const [punya, setPunya] = useState([]);          // array id alat
-  const [gunungId, setGunungId] = useState('');
+  const [punya, setPunya] = useState([]);
   const [memuat, setMemuat] = useState(true);
   const [error, setError] = useState('');
 
   const [saran, setSaran] = useState(null);
   const [sumberSaran, setSumberSaran] = useState('');
+  const [alasanSaran, setAlasanSaran] = useState('');
   const [memintaSaran, setMemintaSaran] = useState(false);
   const [errorSaran, setErrorSaran] = useState('');
 
@@ -82,7 +92,7 @@ export default function MyGearPage() {
     const id = Number(alatId);
     const sudah = punya.includes(id);
     setPunya((lama) => (sudah ? lama.filter((x) => x !== id) : [...lama, id]));
-    setSaran(null); // saran lama tidak berlaku lagi
+    setSaran(null);
 
     if (!supabaseSiap || !user) return;
     if (sudah) {
@@ -94,28 +104,51 @@ export default function MyGearPage() {
   };
 
   /* ------------------ perhitungan angka ------------------- */
-  const { wajib, wajibPunya, persen, belum, beratPunya } = useMemo(() => {
-    const w = semuaAlat.filter((a) => a.prioritas === 'Wajib');
+  const {
+    alatRelevan, wajib, wajibPunya, persen, belumWajib, beratPunya, alatCamp,
+  } = useMemo(() => {
+    const campOnly = semuaAlat.filter((a) => (a.konteks || 'semua') === 'camp');
+    const relevan = rencana.gaya === 'camp'
+      ? semuaAlat
+      : semuaAlat.filter((a) => (a.konteks || 'semua') !== 'camp');
+
+    const w = relevan.filter((a) => a.prioritas === 'Wajib');
     const wp = w.filter((a) => punya.includes(Number(a.id)));
-    const bl = semuaAlat.filter((a) => !punya.includes(Number(a.id)));
-    const berat = semuaAlat
+    const bw = w.filter((a) => !punya.includes(Number(a.id)));
+    const berat = relevan
       .filter((a) => punya.includes(Number(a.id)))
       .reduce((t, a) => t + (parseFloat(String(a.berat_ideal).replace(',', '.')) || 0), 0);
+
     return {
-      wajib: w, wajibPunya: wp, belum: bl, beratPunya: berat,
+      alatRelevan: relevan, alatCamp: campOnly,
+      wajib: w, wajibPunya: wp, belumWajib: bw, beratPunya: berat,
       persen: w.length ? Math.round((wp.length / w.length) * 100) : 0,
     };
-  }, [semuaAlat, punya]);
+  }, [semuaAlat, punya, rencana.gaya]);
 
-  const gunungTerpilih = semuaGunung.find((g) => String(g.id) === String(gunungId));
+  /* Perlengkapan dikelompokkan per kategori agar daftar panjang tetap terbaca. */
+  const perKategori = useMemo(() => {
+    const peta = new Map();
+    alatRelevan.forEach((a) => {
+      const k = a.kategori || 'Lainnya';
+      if (!peta.has(k)) peta.set(k, []);
+      peta.get(k).push(a);
+    });
+    return Array.from(peta.entries());
+  }, [alatRelevan]);
+
+  const gunungTerpilih = semuaGunung.find((g) => String(g.id) === String(rencana.gunungId));
+  const airLiter = (2 * totalHari * rencana.jumlahOrang).toFixed(1);
 
   /* --------------------- meminta saran -------------------- */
   const mintaSaran = async () => {
-    if (!gunungId) { setErrorSaran('Pilih gunung tujuan dulu.'); return; }
-    setMemintaSaran(true); setErrorSaran(''); setSaran(null);
+    if (!rencana.gunungId) { setErrorSaran('Pilih gunung tujuan dulu.'); return; }
+    setMemintaSaran(true); setErrorSaran(''); setSaran(null); setAlasanSaran('');
     try {
-      const { data, sumber } = await api.postSaranGear(Number(gunungId), punya);
-      setSaran(data); setSumberSaran(sumber);
+      const { data, sumber, alasan } = await api.postSaranGear(
+        Number(rencana.gunungId), punya, rencana
+      );
+      setSaran(data); setSumberSaran(sumber); setAlasanSaran(alasan || '');
     } catch (err) {
       setErrorSaran(err.message);
     } finally {
@@ -131,7 +164,7 @@ export default function MyGearPage() {
       <PageHeader title="My Gear" subtitle="Cek kesiapan perlengkapanmu" icon={Backpack} />
 
       <section className="page-pad">
-        {/* ---------- RINGKASAN KESIAPAN ---------- */}
+        {/* ================= RINGKASAN KESIAPAN ================= */}
         <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-black/5">
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
@@ -147,12 +180,17 @@ export default function MyGearPage() {
                 {wajibPunya.length} dari {wajib.length} alat wajib
               </p>
               <p className="mt-1 text-[11px] leading-relaxed text-forest-800/60">
-                Persentase dihitung dari perlengkapan berstatus <strong>Wajib</strong>, karena itu yang menentukan keselamatan.
+                Dihitung dari perlengkapan <strong>Wajib</strong> untuk gaya{' '}
+                <strong>{rencana.gaya === 'camp' ? 'bermalam' : 'tektok'}</strong>.
               </p>
-              <p className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-forest-500">
-                <Weight size={12} />
-                Total bawaan ± {beratPunya.toFixed(2)} kg
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p className="flex items-center gap-1 text-[11px] font-semibold text-forest-500">
+                  <Weight size={12} /> ± {beratPunya.toFixed(2)} kg
+                </p>
+                <p className="flex items-center gap-1 text-[11px] font-semibold text-sky-600">
+                  <Droplets size={12} /> ± {airLiter} L air
+                </p>
+              </div>
             </div>
           </div>
 
@@ -160,24 +198,39 @@ export default function MyGearPage() {
             <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-amber-800 ring-1 ring-amber-200">
               <TriangleAlert size={15} className="mt-0.5 shrink-0" />
               <p className="text-[11px] leading-relaxed">
-                Masih ada {wajib.length - wajibPunya.length} perlengkapan wajib yang belum dimiliki.
+                Masih ada {belumWajib.length} perlengkapan wajib yang belum dimiliki:{' '}
+                {belumWajib.map((a) => a.nama).join(', ')}.
+              </p>
+            </div>
+          )}
+
+          {rencana.gaya === 'tektok' && alatCamp.length > 0 && (
+            <div className="mt-2 flex items-start gap-2 rounded-xl bg-sky-50 p-3 text-sky-900 ring-1 ring-sky-200">
+              <Info size={15} className="mt-0.5 shrink-0" />
+              <p className="text-[11px] leading-relaxed">
+                {alatCamp.length} perlengkapan bermalam disembunyikan karena kamu memilih tektok.
+                Ganti ke Bermalam bila berencana menginap.
               </p>
             </div>
           )}
         </div>
 
-        {/* ---------- PILIH GUNUNG + MINTA SARAN ---------- */}
+        {/* ================= RENCANA PENDAKIAN ================= */}
         <div className="mt-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-black/5">
           <h2 className="flex items-center gap-2 text-sm font-bold text-forest-800">
             <Mountain size={16} className="text-forest-500" />
             Rencana pendakian
           </h2>
 
+          {/* gunung tujuan */}
+          <label className="mt-3 block text-[11px] font-semibold text-forest-800/70" htmlFor="gunung-tujuan">
+            Gunung tujuan
+          </label>
           <select
-            value={gunungId}
-            onChange={(e) => { setGunungId(e.target.value); setSaran(null); setErrorSaran(''); }}
-            aria-label="Pilih gunung tujuan"
-            className="mt-2.5 w-full rounded-xl border-0 bg-sand px-3.5 py-3 text-sm text-forest-800
+            id="gunung-tujuan"
+            value={rencana.gunungId}
+            onChange={(e) => { ubahRencana({ gunungId: e.target.value }); setSaran(null); setErrorSaran(''); }}
+            className="mt-1 w-full rounded-xl border-0 bg-sand px-3.5 py-3 text-sm text-forest-800
                        shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-forest-300"
           >
             <option value="">-- Pilih gunung tujuan --</option>
@@ -188,11 +241,90 @@ export default function MyGearPage() {
             ))}
           </select>
 
+          {/* gaya pendakian */}
+          <p className="mt-3.5 text-[11px] font-semibold text-forest-800/70">Gaya pendakian</p>
+          <div className="mt-1.5 grid grid-cols-2 gap-2">
+            {[
+              { id: 'tektok', label: 'Tektok', ket: 'Naik turun sehari', icon: Sun },
+              { id: 'camp',   label: 'Bermalam', ket: 'Menginap di gunung', icon: Tent },
+            ].map((g) => {
+              const Ikon = g.icon;
+              const aktif = rencana.gaya === g.id;
+              return (
+                <button
+                  key={g.id} type="button"
+                  onClick={() => { ubahRencana({ gaya: g.id }); setSaran(null); }}
+                  aria-pressed={aktif}
+                  className={`rounded-xl p-3 text-left ring-1 transition-colors active:scale-[0.98] ${
+                    aktif ? 'bg-forest-600 text-white ring-forest-600' : 'bg-sand text-forest-800 ring-black/5'
+                  }`}
+                >
+                  <Ikon size={17} className={aktif ? 'text-white' : 'text-forest-500'} />
+                  <span className="mt-1.5 block text-[12px] font-bold">{g.label}</span>
+                  <span className={`block text-[10px] ${aktif ? 'text-white/70' : 'text-forest-800/50'}`}>
+                    {g.ket}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* berapa malam, hanya untuk camp */}
+          {rencana.gaya === 'camp' && (
+            <>
+              <p className="mt-3.5 flex items-center gap-1.5 text-[11px] font-semibold text-forest-800/70">
+                <Moon size={12} /> Berapa malam?
+              </p>
+              <div className="mt-1.5 flex gap-1.5">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <button
+                    key={n} type="button"
+                    onClick={() => { ubahRencana({ lamaMalam: n }); setSaran(null); }}
+                    aria-pressed={rencana.lamaMalam === n}
+                    aria-label={`${n} malam`}
+                    className={`h-9 flex-1 rounded-lg text-[12px] font-bold transition-colors ${
+                      rencana.lamaMalam === n
+                        ? 'bg-forest-600 text-white'
+                        : 'bg-sand text-forest-800/60 ring-1 ring-black/5'
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[10px] text-forest-800/45">
+                {rencana.lamaMalam} malam berarti sekitar {totalHari} hari perjalanan.
+              </p>
+            </>
+          )}
+
+          {/* jumlah orang */}
+          <p className="mt-3.5 flex items-center gap-1.5 text-[11px] font-semibold text-forest-800/70">
+            <Users size={12} /> Jumlah pendaki
+          </p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <button
+              type="button" aria-label="Kurangi jumlah pendaki"
+              onClick={() => { ubahRencana({ jumlahOrang: Math.max(1, rencana.jumlahOrang - 1) }); setSaran(null); }}
+              className="h-9 w-9 rounded-lg bg-sand text-sm font-bold text-forest-800 ring-1 ring-black/5 active:scale-95"
+            >
+              −
+            </button>
+            <span className="min-w-[3.5rem] text-center text-sm font-bold text-forest-800">
+              {rencana.jumlahOrang} orang
+            </span>
+            <button
+              type="button" aria-label="Tambah jumlah pendaki"
+              onClick={() => { ubahRencana({ jumlahOrang: Math.min(20, rencana.jumlahOrang + 1) }); setSaran(null); }}
+              className="h-9 w-9 rounded-lg bg-sand text-sm font-bold text-forest-800 ring-1 ring-black/5 active:scale-95"
+            >
+              +
+            </button>
+          </div>
+
           <button
-            type="button"
-            onClick={mintaSaran}
-            disabled={memintaSaran}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-forest-600 py-3
+            type="button" onClick={mintaSaran} disabled={memintaSaran}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-forest-600 py-3
                        text-xs font-semibold text-white active:scale-[0.98] disabled:opacity-60"
           >
             {memintaSaran ? <RefreshCw size={15} className="animate-spin" /> : <Sparkles size={15} />}
@@ -216,61 +348,73 @@ export default function MyGearPage() {
                   </li>
                 ))}
               </ul>
-              <p className="mt-2.5 text-[10px] italic text-forest-800/45">
-                Sumber saran: {sumberSaran}
-              </p>
+              <p className="mt-2.5 text-[10px] italic text-forest-800/45">Sumber saran: {sumberSaran}</p>
+              {alasanSaran && (
+                <p className="mt-1 text-[10px] leading-relaxed text-forest-800/40">
+                  Keterangan teknis: {alasanSaran}
+                </p>
+              )}
             </div>
           )}
         </div>
 
-        {/* ---------- DAFTAR CENTANG PERLENGKAPAN ---------- */}
-        <h2 className="mb-2 mt-5 text-sm font-bold text-forest-800">
-          Centang yang sudah kamu punya
-        </h2>
-        <div className="space-y-2">
-          {semuaAlat.map((a) => {
-            const dimiliki = punya.includes(Number(a.id));
-            return (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => toggleAlat(a.id)}
-                aria-pressed={dimiliki}
-                className={`flex w-full items-center gap-3 rounded-xl p-3 text-left ring-1 transition-colors active:scale-[0.99] ${
-                  dimiliki ? 'bg-forest-100/70 ring-forest-300' : 'bg-white ring-black/5'
-                }`}
-              >
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ring-1 ${
-                  dimiliki ? 'bg-forest-500 text-white ring-forest-500' : 'bg-white ring-forest-800/20'
-                }`}>
-                  {dimiliki && <Check size={14} strokeWidth={3} />}
-                </span>
-
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-semibold text-forest-800">{a.nama}</span>
-                  <span className="mt-0.5 block truncate text-[11px] text-forest-800/55">
-                    {a.kategori} · {a.berat_ideal}
-                  </span>
-                </span>
-
-                <PriorityBadge level={a.prioritas} />
-              </button>
-            );
-          })}
+        {/* ================= DAFTAR PERLENGKAPAN ================= */}
+        <div className="mb-2 mt-5 flex items-end justify-between">
+          <h2 className="text-sm font-bold text-forest-800">Centang yang sudah kamu punya</h2>
+          <span className="text-[11px] font-semibold text-forest-800/45">
+            {punya.filter((id) => alatRelevan.some((a) => Number(a.id) === id)).length}/{alatRelevan.length}
+          </span>
         </div>
 
-        {belum.length > 0 && (
-          <div className="mt-4 rounded-2xl bg-white p-4 shadow-card ring-1 ring-black/5">
-            <h3 className="text-xs font-bold text-forest-800">Belum dimiliki ({belum.length})</h3>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-forest-800/60">
-              {belum.map((a) => a.nama).join(', ')}.
-            </p>
-          </div>
-        )}
+        <div className="space-y-4">
+          {perKategori.map(([kategori, daftar]) => (
+            <div key={kategori}>
+              <h3 className="mb-1.5 px-1 text-[11px] font-bold uppercase tracking-wide text-forest-800/40">
+                {kategori}
+              </h3>
+              <div className="space-y-2">
+                {daftar.map((a) => {
+                  const dimiliki = punya.includes(Number(a.id));
+                  return (
+                    <button
+                      key={a.id} type="button" onClick={() => toggleAlat(a.id)} aria-pressed={dimiliki}
+                      className={`flex w-full items-center gap-3 rounded-xl p-2.5 text-left ring-1
+                                  transition-colors active:scale-[0.99] ${
+                        dimiliki ? 'bg-forest-100/70 ring-forest-300' : 'bg-white ring-black/5'
+                      }`}
+                    >
+                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ring-1 ${
+                        dimiliki ? 'bg-forest-500 text-white ring-forest-500' : 'bg-white ring-forest-800/20'
+                      }`}>
+                        {dimiliki && <Check size={14} strokeWidth={3} />}
+                      </span>
+
+                      <SafeImage
+                        src={a.gambar_url} alt={a.nama}
+                        className={`h-12 w-12 shrink-0 rounded-lg object-cover ${dimiliki ? '' : 'opacity-80'}`}
+                      />
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-semibold text-forest-800">{a.nama}</span>
+                        <span className="mt-0.5 block truncate text-[11px] text-forest-800/55">
+                          {a.berat_ideal}
+                          {(a.konteks || 'semua') === 'camp' && ' · hanya untuk bermalam'}
+                        </span>
+                      </span>
+
+                      <PriorityBadge level={a.prioritas} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
 
         {gunungTerpilih && (
-          <p className="mt-4 text-center text-[11px] text-forest-800/45">
-            Target saat ini: {gunungTerpilih.nama} · {gunungTerpilih.estimasi_waktu}
+          <p className="mt-5 text-center text-[11px] text-forest-800/45">
+            Target saat ini: {gunungTerpilih.nama} · {gunungTerpilih.estimasi_waktu} ·{' '}
+            {rencana.gaya === 'camp' ? `${rencana.lamaMalam} malam` : 'tektok'} · {rencana.jumlahOrang} orang
           </p>
         )}
       </section>
