@@ -14,6 +14,9 @@ import api from '../api/client.js';
 import PageHeader from '../components/PageHeader.jsx';
 import SearchBar from '../components/SearchBar.jsx';
 import AlatCard from '../components/AlatCard.jsx';
+import SortBar from '../components/SortBar.jsx';
+import { urutkan } from '../lib/urutan.js';
+import { useUrutan } from '../context/useUrutan.js';
 import {
   EmptyState,
   ErrorState,
@@ -27,6 +30,17 @@ function parseBerat(teks) {
   return Number.isFinite(angka) ? angka : 0;
 }
 
+/**
+ * Pilihan urutan untuk katalog perlengkapan.
+ * Bawaannya prioritas dari yang paling wajib, karena itulah
+ * urutan yang menentukan keselamatan saat menyiapkan barang.
+ */
+const OPSI_URUT = [
+  { id: 'prioritas', label: 'Prioritas', naik: 'Paling wajib dulu', turun: 'Paling opsional dulu' },
+  { id: 'berat',     label: 'Berat',     naik: 'Teringan dulu',     turun: 'Terberat dulu' },
+  { id: 'nama',      label: 'Nama',      naik: 'A sampai Z',        turun: 'Z sampai A' },
+];
+
 export default function AlatListPage() {
   const [daftarAlat, setDaftarAlat] = useState([]);
   const [keyword, setKeyword] = useState('');
@@ -34,6 +48,7 @@ export default function AlatListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cacheInfo, setCacheInfo] = useState(null);
+  const [urut, setUrut] = useUrutan('alat', { kunci: 'prioritas', arah: 'naik' });
 
   const ambilData = useCallback(async () => {
     setLoading(true);
@@ -63,7 +78,7 @@ export default function AlatListPage() {
   const hasilTampil = useMemo(() => {
     const kata = keyword.trim().toLowerCase();
 
-    return daftarAlat.filter((alat) => {
+    const tersaring = daftarAlat.filter((alat) => {
       const cocokKeyword =
         !kata ||
         String(alat.nama).toLowerCase().includes(kata) ||
@@ -73,7 +88,9 @@ export default function AlatListPage() {
 
       return cocokKeyword && cocokKategori;
     });
-  }, [daftarAlat, keyword, kategori]);
+
+    return urutkan(tersaring, urut.kunci, urut.arah);
+  }, [daftarAlat, keyword, kategori, urut]);
 
   const totalBerat = useMemo(
     () => hasilTampil.reduce((akumulasi, alat) => akumulasi + parseBerat(alat.berat_ideal), 0),
@@ -125,6 +142,8 @@ export default function AlatListPage() {
 
         {!loading && !error && (
           <>
+            <SortBar opsi={OPSI_URUT} nilai={urut} onChange={setUrut} />
+
             <div className="mb-3 flex items-center justify-between">
               <p className="text-[11px] font-medium text-forest-800/55">
                 {hasilTampil.length} perlengkapan

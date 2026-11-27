@@ -14,6 +14,9 @@ import api from '../api/client.js';
 import PageHeader from '../components/PageHeader.jsx';
 import SearchBar from '../components/SearchBar.jsx';
 import GunungCard from '../components/GunungCard.jsx';
+import SortBar from '../components/SortBar.jsx';
+import { urutkan } from '../lib/urutan.js';
+import { useUrutan } from '../context/useUrutan.js';
 import {
   EmptyState,
   ErrorState,
@@ -23,6 +26,18 @@ import {
 
 const FILTER_KESULITAN = ['Semua', 'Pemula', 'Menengah', 'Sulit'];
 
+/**
+ * Pilihan urutan untuk daftar gunung.
+ * Bawaannya ketinggian dari yang terendah, karena gunung rendah
+ * adalah titik mulai yang masuk akal bagi pendaki pemula.
+ */
+const OPSI_URUT = [
+  { id: 'ketinggian', label: 'Ketinggian', naik: 'Terendah dulu',      turun: 'Tertinggi dulu' },
+  { id: 'kesulitan',  label: 'Kesulitan',  naik: 'Paling ringan dulu', turun: 'Paling sulit dulu' },
+  { id: 'harga',      label: 'Tiket',      naik: 'Termurah dulu',      turun: 'Termahal dulu' },
+  { id: 'nama',       label: 'Nama',       naik: 'A sampai Z',         turun: 'Z sampai A' },
+];
+
 export default function GunungListPage() {
   const [daftarGunung, setDaftarGunung] = useState([]);
   const [keyword, setKeyword] = useState('');
@@ -30,6 +45,7 @@ export default function GunungListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cacheInfo, setCacheInfo] = useState(null);
+  const [urut, setUrut] = useUrutan('gunung', { kunci: 'ketinggian', arah: 'naik' });
 
   const ambilData = useCallback(async () => {
     setLoading(true);
@@ -50,11 +66,12 @@ export default function GunungListPage() {
     ambilData();
   }, [ambilData]);
 
-  // Pencarian + filter dijalankan di sisi client agar terasa instan.
+  // Pencarian, filter, dan pengurutan dijalankan di sisi client
+  // agar hasilnya terasa instan tanpa menunggu server.
   const hasilTampil = useMemo(() => {
     const kata = keyword.trim().toLowerCase();
 
-    return daftarGunung.filter((gunung) => {
+    const tersaring = daftarGunung.filter((gunung) => {
       const cocokKeyword =
         !kata ||
         String(gunung.nama).toLowerCase().includes(kata) ||
@@ -66,7 +83,9 @@ export default function GunungListPage() {
 
       return cocokKeyword && cocokKesulitan;
     });
-  }, [daftarGunung, keyword, kesulitan]);
+
+    return urutkan(tersaring, urut.kunci, urut.arah);
+  }, [daftarGunung, keyword, kesulitan, urut]);
 
   return (
     <>
@@ -112,6 +131,8 @@ export default function GunungListPage() {
 
         {!loading && !error && (
           <>
+            <SortBar opsi={OPSI_URUT} nilai={urut} onChange={setUrut} />
+
             <p className="mb-3 text-[11px] font-medium text-forest-800/55">
               Menampilkan {hasilTampil.length} dari {daftarGunung.length} gunung
             </p>
